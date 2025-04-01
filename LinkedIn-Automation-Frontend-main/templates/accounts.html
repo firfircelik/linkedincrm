@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %} Accounts {% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-5">Accounts</h2>
+ 
+  <br>
+  <table class="table table-hover">
+    <thead>
+      <tr>
+      
+        <th scope="col">Account Name</th>
+        <th scope="col">Restricted View</th>
+        <th scope="col">Status</th>
+        <th scope="col">Capacity Limit
+        </th>
+     
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in accounts %}
+        <tr data-id="{{ row.id }}" onclick="navigateToAccountDetails('{{ row.id }}')">
+          <td data-field="name" contenteditable="true" onclick="event.stopPropagation()">{{row.name}}</td>
+          <td onclick="event.stopPropagation()">
+            <form method="POST" enctype="multipart/form-data">
+              {% csrf_token %}
+            <input type="hidden" name="account_id" value="{{ row.id }}">
+
+            <select name="restrict_view" onchange="this.form.submit()">
+              <option value="enabled" {% if row.restrict_view == 'enabled' %}selected{% endif %}>Enabled</option>
+              <option value="disabled" {% if row.restrict_view == 'disabled' %}selected{% endif %}>Disabled</option>
+              <option value="Lawsons" {% if row.restrict_view == 'Lawsons' %}selected{% endif %}>Lawsons</option>
+
+          </select>
+            </form>
+          </td>
+          <td>{{row.status}}</td>
+          <td data-field="capacity_limit" contenteditable="true" onclick="event.stopPropagation()" onkeydown="return isNumberKey(event)">{{row.capacity_limit}}</td>
+          <td onclick="event.stopPropagation();">
+            <a href="javascript:void(0);" class="delete-account" data-account-id="{{ row.id }}" data-account-name="{{ row.name }}">
+                <i class="bi bi-trash-fill" style="color: red;"></i> <!-- Bootstrap trash can icon -->
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAccountModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the account "<span id="deleteAccountName"></span>"?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteButton">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<script>
+  var baseUrl = "{% url 'account_details' account_id=0 %}".replace('0/', '');
+  function navigateToAccountDetails(accountId) {
+  window.location.href = baseUrl + accountId + '/';
+}
+  // CSRF Token
+  function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+      let cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+          let cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+          }
+      }
+  }
+  return cookieValue;
+}
+
+let csrftoken = getCookie('csrftoken');
+
+// Blur event
+document.querySelectorAll('[contenteditable=true]').forEach(function(element) {
+let oldText = element.textContent; // Hold the initial text 
+
+element.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { // When Enter is pressed
+      e.preventDefault(); // Prevent newline
+
+      // Save the updated text
+      const newValue = this.textContent;
+      const field = this.getAttribute('data-field'); // The field name
+      const id = this.closest('tr').getAttribute('data-id'); // The ID of the call
+      // If old text and new text are not the same, update the value
+      if (oldText !== newValue) {
+          const tr = this.closest('tr');
+          let data = {};
+          tr.querySelectorAll('[contenteditable=true], select, input[type="datetime-local"], input[type="checkbox"]').forEach((el) => {
+              let fieldName = el.getAttribute('data-field') || el.getAttribute('name');
+              let fieldValue;
+              if (el.tagName === 'SELECT' || el.tagName === 'INPUT') {
+                  fieldValue = el.value;
+              } else {
+                  fieldValue = el.textContent;
+              }
+              data[fieldName] = fieldValue;
+          });
+
+          // Send AJAX request to Django view
+          fetch('/accounts/', {
+              method: 'POST',
+              headers: {
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': csrftoken  // Django's CSRF token, you need to retrieve it
+              },
+              body: JSON.stringify({id: id, field: field, value: newValue, rowData: data}) // Here we add all row data to our request
+          })
+          .then(response => {
+              if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json();
+          })
+          .then(data => {
+              // Only refresh when data indicates success.
+              if (data.success) {
+                  location.href = window.location.pathname + window.location.search;
+              }
+          })
+          .catch(error => alert(error));
+      }
+
+      this.blur(); // Unfocus the field
+  } else if (e.key === 'Escape') { // When Escape is pressed
+      this.textContent = oldText; // Revert to old text
+      this.blur(); // Unfocus the field
+  }
+});
+
+element.addEventListener('focus', function(e) {
+  oldText = this.textContent; // Update oldText whenever the user clicks to edit
+});
+});
+
+// For Ony numeric Entry in Capacity Limit
+function isNumberKey(evt){
+    var charCode = (evt.which) ? evt.which : evt.keyCode;
+    // Allow only numeric input: 
+    // charCode > 31 (to ignore control characters), 
+    // charCode 48-57 are 0-9 numbers on standard keyboard
+    if (charCode > 31 && (charCode < 48 || charCode > 57))
+        return false;
+    return true;
+}
+// Delete Account Logic 
+document.addEventListener('DOMContentLoaded', function() {
+    // Your existing JavaScript...
+
+    document.querySelectorAll('.delete-account').forEach(item => {
+        item.addEventListener('click', function(e) {
+            const accountId = this.getAttribute('data-account-id');
+            const accountName = this.getAttribute('data-account-name');
+
+            document.getElementById('deleteAccountName').textContent = accountName;
+            const confirmButton = document.getElementById('confirmDeleteButton');
+            confirmButton.setAttribute('data-account-id', accountId);
+
+            $('#deleteAccountModal').modal('show');
+        });
+    });
+
+    document.getElementById('confirmDeleteButton').addEventListener('click', function() {
+        const accountId = this.getAttribute('data-account-id');
+
+        // AJAX call to delete account
+        fetch('/accounts/', {  // Adjust URL as necessary
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+            },
+            body: JSON.stringify({ 'action': 'delete', 'account_id': accountId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload(); // Reload page to reflect changes
+            } else {
+                alert('Failed to delete account.'); // Handle failure
+            }
+        });
+        $('#deleteAccountModal').modal('hide');
+    });
+});
+
+
+
+</script>
+{% endblock %}

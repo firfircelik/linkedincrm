@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %} User Metrics Distribution {% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-5">User Metrics Distribution</h2>
+
+  <div>
+    {{ plot_div|safe }}
+  </div>
+  <br>
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th scope="col">Username</th>
+        <th scope="col">Assign Account</th>
+        <th scope="col">Assigned Accounts</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <!-- <td>{{ user }}</td> -->
+        <td><a href="{% url 'cold_leads' user.id %}">{{ user.username }}</a></td>
+        <td>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignAccountModal"
+            data-user-id="{{ user.id }}" onclick="setCurrentUserId(this.getAttribute('data-user-id'));">
+            Assign Account
+          </button>
+        </td>
+        <td>
+          {% for account in user.assigned_accounts %}
+          <a href="javascript:void(0);" class="assigned-account" data-bs-toggle="modal"
+            data-bs-target="#deleteAccountModal" data-account-id="{{ account.id }}"
+            data-account-name="{{ account.name }}" data-user-id="{{ user.id }}" data-user-name="{{ user.username }}">
+            {{ account.name }}
+          </a><br>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<!-- Assign Account Modal -->
+<div class="modal fade" id="assignAccountModal" tabindex="-1" aria-labelledby="assignAccountModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="assignAccountModalLabel">Assign Account</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="assignAccountForm">
+          {% for account in accounts %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="account_ids" value="{{ account.id }}"
+              id="account{{ account.id }}">
+            <label class="form-check-label" for="account{{ account.id }}">
+              {{ account.name }}
+            </label>
+          </div>
+          {% endfor %}
+        </form>
+
+      </div>
+      <div class="modal-footer">
+        <div id="assignLoader" style="display: none;">
+          <div class="spinner-border text-primary" role="status"></div>
+          <span class="ms-2">Loading...</span>
+        </div>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="submitAssignAccount()">Assign</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteAccountModalLabel">Delete Assigned Account</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete Assigned Accounts?
+      </div>
+      <div class="modal-footer">
+        <div id="deleteLoader" style="display: none;">
+          <div class="spinner-border text-primary" role="status"></div>
+          <span class="ms-2">Loading...</span>
+        </div>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteButton">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      let cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        let cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  let csrftoken = getCookie('csrftoken');
+  // Event Listeners
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.assigned-account').forEach(account => {
+      account.addEventListener('click', function () {
+        const accountId = this.getAttribute('data-account-id');
+        const userId = this.getAttribute('data-user-id');
+        const accountName = this.getAttribute('data-account-name');
+        const userName = this.getAttribute('data-user-name');
+
+        // Set the text for the modal
+        const modalBody = document.querySelector('#deleteAccountModal .modal-body');
+        modalBody.innerHTML = `Are you sure you want to delete Account <strong>${accountName}</strong> from User <strong>${userName}</strong>?`;
+
+        // Set data attributes for the delete button
+        const deleteButton = document.querySelector('#deleteAccountModal .btn-danger');
+        deleteButton.setAttribute('data-account-id', accountId);
+        deleteButton.setAttribute('data-user-id', userId);
+        document.querySelector('#confirmDeleteButton').addEventListener('click', function () {
+          submitDeleteAssignedAccount(userId, accountId);
+        });
+      });
+    });
+  });
+
+  var currentUserId; // This will hold the user ID for which accounts are being assigned
+
+  function setCurrentUserId(userId) {
+    currentUserId = userId;
+  }
+
+  function submitAssignAccount() {
+    document.getElementById('assignLoader').style.display = 'block';
+    const selectedAccounts = document.querySelectorAll('#assignAccountForm input[type="checkbox"]:checked');
+    const accountIds = Array.from(selectedAccounts).map(checkbox => checkbox.value);
+
+    fetch('/user_metrics_distribution/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+      },
+      body: JSON.stringify({
+        action: 'assign',
+        user_id: currentUserId,
+        account_ids: accountIds
+      })
+    })
+      .then(response => response.json())
+      .then(data => {
+        // Hide loader
+        document.getElementById('assignLoader').style.display = 'none';
+
+        if (data.success) {
+          // Handle success
+          console.log(data);
+
+          // Hide the modal
+          $('#assignAccountModal').modal('hide');
+
+          // Optionally, update the UI or refresh the page
+          window.location.reload();
+        } else {
+          // Handle failure
+          alert(data.message); // Show an error message
+        }
+      })
+      .catch(error => {
+        // Handle error
+        console.error('Error:', error);
+      });
+  }
+
+  function submitDeleteAssignedAccount(userId, accountId,) {
+    const deleteButton = document.querySelector('#deleteAccountModal .btn-danger');
+    // Show loader
+    document.getElementById('deleteLoader').style.display = 'inline-block';
+
+    // Disable the delete button to prevent multiple clicks (optional, as there might be no button in this case)
+    const deleteButtons = document.querySelectorAll('#deleteAccountModal .btn-danger');
+    deleteButtons.forEach(button => button.disabled = true);
+
+    // Send the request
+    fetch('/user_metrics_distribution/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+      },
+      body: JSON.stringify({ action: 'delete', user_id: userId, account_id: accountId })
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Hide loader
+          document.getElementById('deleteLoader').style.display = 'none';
+
+          // Optionally, remove the account from the UI here
+          // For immediate feedback, could remove the link or update the list
+
+          // If modal was used, close it
+          $('#deleteAccountModal').modal('hide');
+
+          // Refresh to show changes
+          window.location.reload();
+        } else {
+          // Handle failure
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('deleteLoader').style.display = 'none';
+      });
+  }
+
+</script>
+
+{% endblock %}

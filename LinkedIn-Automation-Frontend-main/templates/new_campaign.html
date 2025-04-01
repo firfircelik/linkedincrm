@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+{% load tz %}
+{% load static %}
+{% block title %}Send New Text Campaign{% endblock %}
+
+{% block content %}
+<style>
+  .message-partition {
+    margin-left: 100px;
+  }
+
+  .bold-label {
+    font-weight: bold;
+    font-size: 1.1em;
+  }
+
+  .download-btn {
+    position: absolute;
+    top: 60px;
+    right: 60px;
+  }
+</style>
+
+<form method="POST" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="container mt-5">
+    <div class="col-6">
+      <h2 class="mb-4">Send New Automation Campaign</h2>
+      <a href="{% static 'campaign_template.csv' %}" class="btn btn-dark download-btn">Download Campaign CSV
+        Template</a>
+
+      <!-- Display Messages -->
+      {% if messages %}
+      <div class="alert alert-dismissible">
+        {% for message in messages %}
+        <div class="{% if message.tags %}alert-{{ message.tags }}{% endif %}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <br>
+      <div class="row">
+        <div class="col-mb-3">
+          <!-- Campaign Type -->
+          <div class="mb-3">
+            <label for="category_type" class="bold-label">Campaign Type</label>
+            <select class="form-control" id="category_type" name="category_type" onchange="updateFields()">
+              <option value="New">New</option>
+              <option value="Existing">Existing</option>
+              <option value="AutoScrapper">Auto Scrapper</option>
+            </select>
+          </div>
+
+          <!-- Campaign Name -->
+          <div id="campaignName" class="mb-3">
+            <label for="campaign_name" class="bold-label">Campaign Name</label>
+            <input type="text" class="form-control" id="campaign_name" name="campaign_name" placeholder="Campaign Name">
+          </div>
+          <!-- Schedule -->
+          <div class="mb-3">
+            <label for="startDateTime" class="bold-label">Start Date and Time</label>
+            <input type="datetime-local" class="form-control" id="startDateTime" name="startDateTime">
+          </div>
+          <div class="mb-3">
+            <label for="endDateTime" class="bold-label">End Date and Time</label>
+            <input type="datetime-local" class="form-control" id="endDateTime" name="endDateTime">
+          </div>
+
+          <div id="otherFields">
+            <!-- Select Account -->
+            <div class="mb-3">
+              <label for="account_id" class="bold-label">Select Account</label>
+              <select class="form-control" id="account_id" name="account_id">
+                <option value="" selected>Choose an Account...</option>
+                {% for account in accounts %}
+                <option value="{{ account.id }}">{{ account.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Category -->
+            <div class="mb-3">
+              <label for="category" class="bold-label">Category</label>
+              <select class="form-control" id="category" name="category">
+                <option value="general">General</option>
+                <option value="lion">LION</option>
+              </select>
+            </div>
+
+            <!-- Location Filter -->
+            <div class="mb-3" id="locationField">
+              <label for="location" class="bold-label">Location Filter</label>
+              <input type="text" class="form-control" id="location" name="location" placeholder="Location Filter">
+            </div>
+
+            <!-- Daily Count -->
+            <div class="mb-3" id="countTag">
+              <label for="daily_count" class="bold-label">Daily Count</label>
+              <input type="number" class="form-control" id="daily_count" name="daily_count"
+                placeholder="Enter Daily Count" min="0">
+            </div>
+
+            <!-- Job Filter -->
+            <div class="mb-3" id="jobtitleField">
+              <label for="jobtitle" class="bold-label">Job Filter</label>
+              <input type="text" class="form-control" id="jobtitle" name="jobtitle" placeholder="Job Filter">
+            </div>
+
+            <div class="mb-3" id="searchValueField" style="display:none;">
+              <h5 class="mb-1">Search Value</h5>
+              <input type="text" class="form-control" name="searchValue" id="searchValue" placeholder="Search Value"
+                value="L.I.O.N OR 'Never IDK' OR 'Toplinked' OR 'Open Networker'">
+            </div>
+
+            <!-- File Upload for New Campaign -->
+            <div class="mb-3" id="newCampaignFile" style="display:none;">
+              <label for="listFile" class="bold-label">Select List File</label>
+              <input type="file" class="form-control" id="listFile" name="listFile">
+            </div>
+
+            <!-- Leads Dropdown for Old Campaign -->
+            <div class="mb-3" id="oldCampaignLeads" style="display:none;">
+              <label for="lead_id" class="bold-label">Select a Lead</label>
+              <select class="form-control" id="lead_id" name="lead_id">
+                {% for lead in leads %}
+                {% if lead.name %}
+                <option value="{{ lead.id }}">{{ lead.name }}</option>
+                {% else %}
+                <option value="{{ lead.id }}">Uploaded {{ lead.profile_link_count }} leads on {{ lead.created_at }}
+                </option>
+                {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div id="autoScrapper">
+            <div class="mb-3">
+              <label for="acategory" class="bold-label">Category</label>
+              <select class="form-control" id="acategory" name="acategory" onchange="updateFields()">
+                <option value="saved_searches">Saved Searches</option>
+                <option value="leads_list">Leads List</option>
+              </select>
+            </div>
+            <!-- Blloean Search -->
+            <div id="booleanSearch" class="mb-3">
+              <label for="booleanSearch" class="bold-label">Boolean Search</label>
+              <input type="text" class="form-control" id="booleanSearch" name="booleanSearch"
+                placeholder="Boolean Search">
+            </div>
+            <div class="mb-3" id="savedsearchesdiv">
+              <label for="saved_search" class="bold-label">Saved Searches</label>
+              <select class="form-control" id="saved_search" name="saved_search">
+                <option value="" selected>Choose any Saved Search...</option>
+                {% for search in saved_searches %}
+                <option value="{{ search.id }}">{{ search.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            
+            <div class="mb-3" id="leadslistdiv" style="display:none;">
+              <label for="saved_search" class="bold-label">Leads List</label>
+              <select class="form-control" id="lead_list" name="lead_list">
+                <option value="" selected>Choose any Lead List...</option>
+                {% for lead_list in lead_lists %}
+                <option value="{{ lead_list.id }}">{{ lead_list.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <!-- Batch Size -->
+            <div id="batchSize" class="mb-3">
+              <label for="batchSize" class="bold-label">Batch Size</label>
+              <input type="number" class="form-control" id="batchSize" name="batchSize" placeholder="Batch Size">
+            </div>
+            <div class="mb-3">
+              <h5 class="mb-1">Page Range</h5>
+              <input type="number" min="1" max="999" step="1" name="minpage" id="minpage" value="1">
+              To
+              <input type="number" min="1" max="999" step="1" name="maxpage" id="maxpage" value="3">
+          </div>
+            <!-- Salary Range Slider -->
+            <div class="salary-range-container">
+              <label for="salaryRange" class="bold-label">Salary Range</label>
+              <input type="range" min="40000" max="450000" step="1000" class="salary-range" id="minSalary"
+                name="minSalary" value="45000">
+              To
+              <input type="range" min="45000" max="500000" step="1000" class="salary-range" id="maxSalary"
+                name="maxSalary" value="50000">
+              <p class="salary-range-values">
+                Min: $<span id="minSalaryValue">45,000</span> &nbsp;&nbsp; Max: $<span id="maxSalaryValue">50,000</span>
+              </p>
+            </div>
+            <div class="age-range-container">
+              <label for="agerange" class="bold-label">Age Range</label>
+              <input type="range" min="30" max="70" step="1" class="age-range" name="minAge" id="minAge" value="35">
+              To
+              <input type="range" min="40" max="80" step="1" class="age-range" name="maxAge" id="maxAge" value="45">
+              <p class="age-range-values">
+                Min: <span id="minAgeValue">35</span> &nbsp;&nbsp; Max: <span id="maxAgeValue">45</span>
+              </p>
+            </div>
+            <div class="experience-range-container">
+              <label for="experiencerange" class="bold-label">Experience Range</label>
+              <input type="range" min="0" max="100" step="1" class="experience-range" name="minExperience" id="minExperience" value="10">
+              To
+              <input type="range" min="0" max="100" step="1" class="experience-range" name="maxExperience" id="maxExperience" value="20">
+              <p class="experience-range-values">
+                Min: <span id="minExperienceValue">10</span> &nbsp;&nbsp; Max: <span id="maxExperienceValue">20</span>
+              </p>
+            </div>
+            <div class="mb-3">
+              <label for="gender" class="bold-label">Gender</label>
+              <select class="form-control" id="gender" name="gender">
+                <option value="">All</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="includeNationality" class="bold-label">Include Nationality</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="includeNationalityInput" placeholder="Add a Nationality">
+                <button class="btn btn-outline-secondary" type="button" id="addincludeNationality"><span>+</span></button>
+              </div>
+              <div id="includeNationalityTags" class="mt-2"></div>
+              <input type="hidden" name="includeNationality" id="hiddenincludeNationality">
+            </div>
+
+            <div class="mb-3">
+              <label for="excludeNationality" class="bold-label">Exclude Nationality</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="excludeNationalityInput" placeholder="Add a Nationality">
+                <button class="btn btn-outline-secondary" type="button" id="addexcludeNationality"><span>+</span></button>
+              </div>
+              <div id="excludeNationalityTags" class="mt-2"></div>
+              <input type="hidden" name="excludeNationality" id="hiddenexcludeNationality">
+            </div>
+            <!-- Expat -->
+            <div class="mb-3">
+              <label for="expat" class="bold-label">Expat</label>
+              <input type="checkbox" id="expat" name="expat">
+            </div>
+
+            <!-- Local -->
+            <div class="mb-3">
+              <label for="local" class="bold-label">Local</label>
+              <input type="checkbox" id="local" name="local">
+            </div>
+
+            <div class="mb-3">
+              <label for="local" class="bold-label">GPT Filter</label>
+              <textarea class="form-control" id="gpt_prompt" name="gpt_prompt" rows="3"></textarea>
+              Shortcodes : {name}, {headline}, {location}, {experience}, {education}, {skills}
+            </div>
+            
+          <br>
+        </div>
+        <button type="submit" class="btn btn-primary me-2">Send Now!</button>
+
+      </div>
+
+    </div>
+  </div>
+</form>
+
+<script>
+  function updateFields() {
+    var acategory = document.getElementById('acategory').value;
+    var leadslistdiv = document.getElementById('leadslistdiv');
+    var savedsearchesdiv = document.getElementById('savedsearchesdiv');
+    var booleanSearch = document.getElementById('booleanSearch');
+
+    if (acategory == 'leads_list'){
+      leadslistdiv.style.display = 'block';
+      savedsearchesdiv.style.display = 'none';
+      booleanSearch.style.display = 'none';
+
+
+    }
+    else {
+      leadslistdiv.style.display = 'none';
+      savedsearchesdiv.style.display = 'block';
+      booleanSearch.style.display = 'block';
+    }
+    // document.getElementById('category_type').value = 'New'; 
+    var categoryType = document.getElementById('category_type').value;
+    var newCampaignFile = document.getElementById('newCampaignFile');
+    var oldCampaignLeads = document.getElementById('oldCampaignLeads');
+    var otherFields = document.getElementById('otherFields');
+    // var campaignName = document.getElementById('campaignName');
+    var autoScrapper = document.getElementById('autoScrapper');
+
+    if (categoryType === 'New') {
+      otherFields.style.display = 'block';
+      newCampaignFile.style.display = 'block';
+      // campaignName.style.display = 'block'
+      oldCampaignLeads.style.display = 'none';
+      autoScrapper.style.display = 'none';
+    } else if (categoryType === 'Existing') {
+      otherFields.style.display = 'block';
+      newCampaignFile.style.display = 'none';
+      oldCampaignLeads.style.display = 'block';
+      autoScrapper.style.display = 'none';
+    } else if (categoryType === 'AutoScrapper') {
+      otherFields.style.display = 'none';
+      // campaignName.style.display = 'none';
+      autoScrapper.style.display = 'block';
+      // campaignName.style.display = 'block';
+    }
+  }
+  // For Sliders Real Time Values
+  const minSalaryInput = document.getElementById("minSalary");
+  const maxSalaryInput = document.getElementById("maxSalary");
+  const minSalaryValueSpan = document.getElementById("minSalaryValue");
+  const maxSalaryValueSpan = document.getElementById("maxSalaryValue");
+
+  // For Age
+  const minAgeInput = document.getElementById("minAge");
+  const maxAgeInput = document.getElementById("maxAge");
+  const minAgeValueSpan = document.getElementById("minAgeValue");
+  const maxAgeValueSpan = document.getElementById("maxAgeValue");
+
+  const minExperienceInput = document.getElementById("minExperience");
+  const maxExperienceInput = document.getElementById("maxExperience");
+  const minExperienceValueSpan = document.getElementById("minExperienceValue");
+  const maxExperienceValueSpan = document.getElementById("maxExperienceValue");
+
+
+  function updateValues() {
+  const minSalary = minSalaryInput.value;
+  const maxSalary = maxSalaryInput.value;
+  const minAge = minAgeInput.value;
+  const maxAge = maxAgeInput.value;
+  const minExperience = minExperienceInput.value;
+  const maxExperience = maxExperienceInput.value;
+
+  minSalaryValueSpan.textContent = `$${minSalary}`;
+  maxSalaryValueSpan.textContent = `$${maxSalary}`;
+  minAgeValueSpan.textContent = minAge;
+  maxAgeValueSpan.textContent = maxAge;
+  minExperienceValueSpan.textContent = minExperience;
+  maxExperienceValueSpan.textContent = maxExperience;
+}
+
+
+  updateValues(); // Initial display
+
+  minSalaryInput.oninput = updateValues;
+  maxSalaryInput.oninput = updateValues;
+  minAgeInput.oninput = updateValues;
+  maxAgeInput.oninput = updateValues;
+  minExperienceInput.oninput = updateValues;
+  maxExperienceInput.oninput = updateValues;
+
+  // Initialize fields on page load
+  document.addEventListener('DOMContentLoaded', function () {
+    updateFields(); // Existing function to set up the page based on the campaign type
+
+    // Function to initialize tag functionality for a specific field
+    function setupTagField(addButtonId, inputId, tagsContainerId, hiddenInputId) {
+        var addTagButton = document.getElementById(addButtonId);
+        var tagInput = document.getElementById(inputId);
+        var tagsContainer = document.getElementById(tagsContainerId);
+        var hiddenInput = document.getElementById(hiddenInputId);
+
+        // Function to add a tag
+        function addTag(tagValue) {
+            if (!tagValue.trim()) return; // Ignore empty tags
+            var tag = document.createElement('span');
+            tag.className = 'tag badge bg-secondary me-1';
+            tag.textContent = tagValue.trim();
+            var closeBtn = document.createElement('span');
+            closeBtn.textContent = ' ×';
+            closeBtn.className = 'close';
+            closeBtn.onclick = function () {
+                tagsContainer.removeChild(tag);
+                updateHiddenInput();
+            };
+            tag.appendChild(closeBtn);
+            tagsContainer.appendChild(tag);
+            tagInput.value = ''; // Clear the input field
+            updateHiddenInput();
+        }
+
+        // Add event listener to the "+" button
+        addTagButton.addEventListener('click', function () {
+            addTag(tagInput.value);
+        });
+
+        // Allow pressing Enter to add a tag
+        tagInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent form submission
+                addTag(tagInput.value);
+            }
+        });
+
+        // Function to update the hidden input field with the list of tags
+        function updateHiddenInput() {
+            var selectedTags = [];
+            tagsContainer.querySelectorAll('.tag').forEach(function (tag) {
+                // Assuming the '×' character is the last two characters of the tag text
+                selectedTags.push(tag.textContent.trim().slice(0, -2));
+            });
+            hiddenInput.value = selectedTags.join(',');
+        }
+    }
+
+    // Initialize all your tag fields here
+    setupTagField('addincludeNationality', 'includeNationalityInput', 'includeNationalityTags', 'hiddenincludeNationality');
+    setupTagField('addexcludeNationality', 'excludeNationalityInput', 'excludeNationalityTags', 'hiddenexcludeNationality');
+
+});
+
+
+</script>
+{% endblock %}

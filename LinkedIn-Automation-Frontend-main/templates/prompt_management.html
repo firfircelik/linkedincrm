@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} Prompt Management{% endblock %}
+
+{% block content %}
+<style>
+    .preserve-format {
+    white-space: pre-line;
+}
+</style>
+<div class="container mt-5">
+    <h2 class="mb-5">Prompt Management</h2>
+
+
+
+  <!-- Code for input form begins from here-->
+
+  <div class="mt-5 mx-2">
+    <form id="add-entry-form" method="POST" action="/prompt_management/">
+        {% csrf_token %}
+            <div class="col-3">
+                <input type="text" class="form-control" id="value" name="value" placeholder="Enter New Prompt Name">
+            </div>
+            <br>
+            <!-- New Text Field Here -->
+            <div class="col-11">
+                <textarea class="form-control" id="prompt" name="prompt" rows="9" placeholder="Enter Prompt here..." required></textarea>
+            </div>
+            <br>
+            
+            <div class="col-1 btn-group">
+                <button type="submit" class="btn btn-outline-secondary">Add</button>
+            </div>
+    </form>    
+</div>
+
+
+  <br>
+
+   <!-- Code for output table begins from here-->
+
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+         
+          <th>Value</th>
+          <th>Prompt</th>
+          
+        </tr>
+      </thead>
+      <tbody>
+        {% for call in prompts_data %}
+            <tr data-id="{{ call.id }}">
+                <td data-field="value" contenteditable="true">
+                    {{call.value}}
+                </td>
+
+                <td class="preserve-format" data-field="prompt" contenteditable="true">{{ call.prompt|safe }}</td>
+
+                
+
+            </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="10" class="text-center">No results found.</td>
+                </tr>
+            {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+  <!--pagination code-->
+
+<script>
+        // CSRF Token
+        function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    let csrftoken = getCookie('csrftoken');
+
+    // Blur event
+document.querySelectorAll('[contenteditable=true]').forEach(function(element) {
+    let oldText = element.textContent; // Hold the initial text 
+
+    element.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { // When Enter is pressed
+            e.preventDefault(); // Prevent newline
+
+            // Save the updated text
+            const newValue = this.textContent;
+            const field = this.getAttribute('data-field'); // The field name
+            const id = this.closest('tr').getAttribute('data-id'); // The ID of the call
+
+            // If old text and new text are not the same, update the value
+            if (oldText !== newValue) {
+                const tr = this.closest('tr');
+                let data = {};
+                tr.querySelectorAll('[contenteditable=true], select, input[type="datetime-local"], input[type="checkbox"]').forEach((el) => {
+                    let fieldName = el.getAttribute('data-field') || el.getAttribute('name');
+                    let fieldValue;
+                    if (el.tagName === 'SELECT' || el.tagName === 'INPUT') {
+                        fieldValue = el.value;
+                    } else {
+                        fieldValue = el.textContent;
+                    }
+                    data[fieldName] = fieldValue;
+                });
+
+                // Send AJAX request to Django view
+                fetch('/prompt_management/', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken  // Django's CSRF token, you need to retrieve it
+                    },
+                    body: JSON.stringify({id: id, field: field, value: newValue, rowData: data}) // Here we add all row data to our request
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data);
+                    // Only refresh when data indicates success.
+                    if (data.success) {
+                        location.href = window.location.pathname + window.location.search;
+                    }
+                })
+                .catch(error => alert(error));
+            }
+
+            this.blur(); // Unfocus the field
+        } else if (e.key === 'Escape') { // When Escape is pressed
+            this.textContent = oldText; // Revert to old text
+            this.blur(); // Unfocus the field
+        }
+    });
+
+    element.addEventListener('focus', function(e) {
+        oldText = this.textContent; // Update oldText whenever the user clicks to edit
+    });
+});
+
+
+
+ 
+
+
+    
+function closeCard(cardId) {
+  document.getElementById(cardId).style.display = 'none';
+}
+var csrfToken = $('[name="csrfmiddlewaretoken"]').val();
+
+$(document).ready(function() {
+    // Check for saved scroll position in localStorage
+    var savedScrollPosition = localStorage.getItem('scrollPosition');
+    if (savedScrollPosition) {
+        window.scrollTo(0, savedScrollPosition);  // Scroll to saved position
+        localStorage.removeItem('scrollPosition');  // Clear the saved position
+    }
+    function handleFormSubmission(formClass) {
+        $(document).on('change', formClass + ' select', function(e) {
+            console.log('Select changed!');
+            e.preventDefault(); // Prevent default form submission
+            e.stopPropagation(); // Stop event propagation
+
+            var form = $(this).parents(formClass); 
+            var formData = form.serialize();
+
+            $.ajax({
+                url: '/order/safet_claims/',
+                type: 'POST',
+                data: formData,
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader('X-CSRFToken', csrfToken);
+                },
+                success: function(response) {
+                    console.log('Success:', response);
+                },
+                error: function(error) {
+                    console.log('Error:', error);
+                }
+            });
+
+            return false; // Prevent further processing
+        });
+    }
+
+    // Initialize form submission handling for each form
+    handleFormSubmission('.statusForm');
+    handleFormSubmission('.reasonForm');
+    handleFormSubmission('.commentsForm');
+
+});
+
+
+</script>
+  
+
+
+  {% endblock %}

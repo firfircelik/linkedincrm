@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %} analysis {% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-5">Analysis</h2>
+  
+  <div>
+    {{ plot_div|safe }}
+</div>
+  <br>
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th scope="col">
+          <input type="checkbox" id="SelectAll" class="form-check-input">
+        </th>
+        <th scope="col">Campaign Name</th>
+   
+        <th scope = "col">Accepted Connection percentage</th>
+        <th scope = "col">Excluded Profiles percentage</th>
+        <th scope = "col">Profiles With Phone Number percentage</th>
+
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in campaign %}
+        <tr>
+          <td></td>
+          <td>{{row.name}}</td>
+          <td>{{row.accepted_percentage}}</td>
+          <td>{{row.excluded_profiles_percentage}}</td>
+          <td>{{row.phone_number_percentage}}</td>
+
+
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

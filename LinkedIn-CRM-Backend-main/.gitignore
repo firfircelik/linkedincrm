@@ -1,0 +1,6 @@
+.env
+.venv
+env/
+venv/
+venv_test/
+user_profiles/

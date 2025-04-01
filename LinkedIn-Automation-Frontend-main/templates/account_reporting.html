@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} Account Performance Report{% endblock %}
+
+{% block content %}
+<style>
+    .search-container {
+display: flex;
+align-items: center;
+background-color: #fff;
+border: 1px solid #e0e0e0;
+box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+position: relative;
+height: 50px; /* Adjust as needed */
+line-height: 50px; /* Adjust as needed */
+}
+
+
+.search-input {
+flex-grow: 1;
+border: none;
+outline: none;
+padding: 10px;
+border-left: 1px solid #e0e0e0;
+padding-right: 45px; /* space for the button */
+height: 100%; /* Adjust as needed */
+padding: 0 45px 0 10px; /* Adjust padding to match the container's height */
+line-height: 50px; /* Adjust as needed */
+}
+
+.search-btn {
+position: absolute;
+right: 0;
+top: 0;
+height: 100%;
+padding: 0 10px; /* Adjust the padding if necessary */
+line-height: 50px; /* Adjust as needed */
+border: none;
+background-color: #198754; /* green background */
+color: #fff;
+border-left: 1px solid #e0e0e0; /* Adding the left border to align with the input field */
+}
+.font-increase input::placeholder {
+    font-size: 18px; /* adjust as needed */
+}
+
+</style>
+<script src="https://kit.fontawesome.com/b99e675b6e.js"></script>
+<div class="container mt-5">
+    <h2 class="mb-5">Account Performance Report</h2>
+</div>
+
+
+  <div style="background-color: #00305E; padding-top: 30px; padding-bottom: 30px;">
+   
+    <form method="get">  
+        <div class="row form-group mb-3">
+          <div class="col-1"></div>
+            <div class="col-2">
+                <div class="card">
+                    <div class="card-header">
+                        Start Date
+                    </div>
+                    <div class="card-body">
+                        <input class="form-control" type="date" name="start_date" value="{{ start_date }}">
+                    </div>
+                </div>
+            </div>
+  
+            <div class="col-2">
+                <div class="card">
+                    <div class="card-header">
+                        End Date
+                    </div>
+                    <div class="card-body">
+                        <input class="form-control" type="date" name="end_date" value="{{ end_date }}">
+                    </div>
+                </div>
+            </div>
+  
+  
+            <div class="col-1 btn-group mt-4">
+              <input class="btn btn-success" style="font-size: 20px;" type="submit" value="Submit">
+          </div>
+        </div>
+    </form>
+  </div>
+  <br>
+  
+      <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                <th>Account</th>
+                <th>Sent</th>
+                <th>Located</th>
+                <th>Excluded</th>
+                <th>Accepted</th>
+                <th>Replied</th>
+                <th>Contacts Shared</th>
+                <th>Accepted Rate</th>
+                <th>Replied Rate</th>
+                <th>Contact Shared Rate</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in accounts %}
+                {% if forloop.counter|divisibleby:2 %}
+                    <tr data-id="{{ call.id }}">
+                {% else %}
+                    <tr data-id="{{ call.id }}" style="background-color: #e1e2eb">
+                {% endif %}
+                <td>{{account.name}}</td>
+                <td>{{account.total_profiles}}</td>
+                <td>{{account.sent_profiles}}</td>
+                <td>{{account.excluded_profiles}}</td>
+                <td>{{account.accepted_profiles}}</td>
+                <td>{{account.replied_profiles}}</td>
+                <td>{{account.contact_shared_profiles}}</td>
+                <td>{{account.accepted_rate|floatformat:2}}</td>
+                <td>{{account.replied_rate|floatformat:2}}</td>
+                <td>{{account.contact_shared_rate|floatformat:2}}</td>
+
+
+                
+            </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="10" class="text-center">No results found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+              
+    </table>
+    
+    </div>
+
+{% endblock %}

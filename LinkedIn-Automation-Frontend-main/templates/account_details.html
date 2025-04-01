@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %} Account Details {% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="d-flex justify-content-between align-items-center mb-5">
+    <h2>{{ account_name }}</h2>
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#usersModal">
+      Download Leads
+    </button>
+  </div>
+  <body data-account-id="{{ account_id }}"></body>
+
+  <div>
+    {{ plot_div|safe }}
+  </div>
+  <br>
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th scope="col">Reply Rate</th>
+        <th scope="col">Reply Ratio</th>
+        <th scope="col">Acceptance Rate</th>
+        <th scope="col">Acceptance Ratio</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ stats.reply_rate }}</td>
+        <td>{{ stats.reply_ratio }}%</td>
+        <td>{{ stats.acceptance_rate }}</td>
+        <td>{{ stats.acceptance_ratio }}%</td>
+        <td>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <!-- TABLE  -->
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th scope="col">Campaign Name </th>
+        <th scope="col">Start Date</th>
+        <th scope="col">End Date</th>
+        <th scope="col">Status</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for campaign in campaigns %}
+      <tr>
+        <td>{{ campaign.name }}</td>
+        <td>{{ campaign.start_date }}</td>
+        <td>{{ campaign.end_date }}</td>
+        <td>{{ campaign.status }}</td>
+        <td>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <form method="post" class="mb-3">
+    {% csrf_token %}
+    <div class="row">
+        <!-- Proxy IP Field -->
+        <div class="col-md-3 d-flex align-items-center mb-2">
+            <label for="{{ form.proxyip.id_for_label }}" class="me-2">Proxy IP:</label>
+            {{ form.proxyip }}
+        </div>
+
+        <!-- Proxy Port Field -->
+        <div class="col-md-3 d-flex align-items-center mb-2">
+            <label for="{{ form.proxyport.id_for_label }}" class="me-2">Proxy Port:</label>
+            {{ form.proxyport }}
+        </div>
+
+        <!-- Proxy User Field -->
+        <div class="col-md-3 d-flex align-items-center mb-2">
+            <label for="{{ form.proxyuser.id_for_label }}" class="me-2">Proxy User:</label>
+            {{ form.proxyuser }}
+        </div>
+
+        <!-- Proxy Password Field -->
+        <div class="col-md-3 d-flex align-items-center mb-2">
+            <label for="{{ form.proxypass.id_for_label }}" class="me-2">Proxy Password:</label>
+            {{ form.proxypass }}
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-outline-success">Update</button>
+</form>
+<!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#usersModal">
+  Download Leads
+</button> -->
+
+<div class="modal fade" id="usersModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="filterModalLabel">Filter Profiles</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="get">
+          <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="contactExist" name="contactExist" value="true">
+
+            <input type="checkbox" class="form-check-input" id="numberRetrieved" name="numberRetrieved" value="true">
+            <label class="form-check-label" for="numberRetrieved">Contact Exist</label>
+            <input type="checkbox" id="statusSent" name="statusSent" name="statusSent" value="true">
+            <label for="statusSent">Request Sent</label>
+            <input type="checkbox" id="introMessageSuccess" name="introMessageSuccess" name="introMessageSuccess" value="true">
+            <label for="introMessageSuccess">No Response</label>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-success" >Download</button>
+      </div>
+    </form>
+
+    </div>
+  </div>
+</div>
+
+</div>
+
+{% endblock %}

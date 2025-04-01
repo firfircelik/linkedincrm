@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %} Campaign Detail {% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2>Text Campaign Overview</h2>
+  <h3>Campaign Name <small class="text-muted">Campaign ID: {{ campaign_id }}</small></h3>
+  <hr>
+  <p>City: Bend, OR</p>
+  <p>List Type: Absentee Owner</p>
+
+  <div id="circleGraph" data-graph-data="{{ graph_data }}"></div>
+  <div class="d-flex justify-content-between mt-4">
+    <button class="btn btn-outline-primary">Download List</button>
+    <button class="btn btn-outline-danger">Delete Campaign</button>
+  </div>
+</div>
+
+<script>
+    // Get the graphData from the data-graph-data attribute
+    const circleGraph = document.getElementById('circleGraph');
+    const graphDataJson = circleGraph.getAttribute('data-graph-data');
+  
+    // Parse the JSON string to a JavaScript object
+    const graphData = JSON.parse(graphDataJson);
+  
+    // Extract labels and values from the graphData object
+    const labels = Object.keys(graphData);
+    const values = Object.values(graphData);
+  
+    const data = [
+      {
+        values: values,
+        labels: labels,
+        type: 'pie',
+        textinfo: 'label+percent',
+        textposition: 'outside',
+        automargin: true
+      }
+    ];
+  
+    const layout = {
+      height: 600, // increase the height
+      width: 800, // increase the width
+      title: 'Campaign Results',
+      showlegend: false,
+      margin: { t: 50, b: 0, l: 0, r: 0 }
+    };
+  
+    Plotly.newPlot('circleGraph', data, layout);
+</script>
+
+
+{% endblock %}
+
+

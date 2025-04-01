@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% load tz %}
+{% load static %}
+{% block title %} Add Account {% endblock %}
+
+{% block content %}
+<!-- Display Messages -->
+{% if messages %}
+<div class="alert alert-dismissible">
+    {% for message in messages %}
+    <div class="{% if message.tags %}alert-{{ message.tags }}{% endif %}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<style>
+    .message-partition {
+        margin-left: 100px;
+    }
+
+    .bold-label {
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    .details-container {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .detail-key {
+        min-width: 160px;
+        /* Adjust based on the longest key */
+        font-weight: bold;
+    }
+
+    .detail-value {
+        flex-grow: 1;
+    }
+
+    .btn-outline-danger {
+        margin-top: 20px;
+    }
+    .download-btn {
+    position: absolute;
+    top: 60px;
+    right: 60px;
+  }
+</style>
+<div class="container mt-5">
+
+<a href="{% static 'LinkedIn_Data_Extractor1.3.2_Windows.zip' %}" class="btn btn-dark download-btn">Download Leads Extractor Scrapper</a>
+</div>
+{% if user.is_superuser %}
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="container mt-5">
+        <h2 class="mb-4">Add Account</h2>
+        <br>
+        <br>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <h5 class="mb-1">Account Name</h5>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Proxy IP</h5>
+                    <input type="text" class="form-control" id="proxyip" name="proxyip" required>
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Proxy Port</h5>
+                    <input type="text" class="form-control" id="proxyport" name="proxyport" required>
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Proxy User</h5>
+                    <input type="text" class="form-control" id="proxyuser" name="proxyuser" required>
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Proxy Password</h5>
+                    <input type="text" class="form-control" id="proxypass" name="proxypass" required>
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Cookies</h5>
+                    <textarea class="form-control" id="cookies" name="cookies" rows="3" required></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-outline-primary">Submit</button>
+        </div>
+    </div>
+</form>
+{% endif %}
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="container mt-5">
+        <h2 class="mb-4">Upload Leads File</h2>
+        <br>
+        <br>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <h5 class="mb-1">Name</h5>
+                    <input type="text" class="form-control" id="file_name" name="file_name" required>
+                </div>
+                <div class="mb-3">
+                    <input type="file" class="form-control" id="listFile" name="listFile">
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-outline-primary">Upload</button>
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+            <hr>
+        </div>
+    </div>
+</form>
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="container mt-5">
+        <h2 class="mb-4">Download Leads File</h2>
+        <br>
+        <br>
+        <div class="mb-3" id="oldCampaignLeads">
+            <label for="lead_id" class="bold-label">Select a Lead</label>
+            <select class="form-control" id="lead_id" name="lead_id">
+              {% for lead in leads %}
+              {% if lead.name %}
+              <option value="{{ lead.id }}">{{ lead.name }}</option>
+              {% else %}
+              <option value="{{ lead.id }}">Uploaded {{ lead.profile_link_count }} leads on {{ lead.created_at }}
+              </option>
+              {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+       
+        <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-outline-success">Download</button>
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+            <hr>
+        </div>
+    </div>
+</form>
+
+
+{% if not linkedin_user %}
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="container mt-5">
+        <h2 class="mb-4">Enter Linkedin Credentials</h2>
+        <br>
+        <br>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <h5 class="mb-1">Email</h5>
+                    <input type="text" class="form-control" id="email" name="email" required>
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Password</h5>
+                    <input type="text" class="form-control" id="password" name="password" required>
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Cookies</h5>
+                    <textarea class="form-control" id="linkedin_cookies" name="linkedin_cookies" rows="3" required></textarea>
+
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Scrapper IP</h5>
+                    <input type="text" class="form-control" id="scrapper_ip" name="scrapper_ip" required>
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Scrapper Port</h5>
+                    <input type="text" class="form-control" id="scrapper_port" name="scrapper_port" required>
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Scrapper User</h5>
+                    <input type="text" class="form-control" id="scrapper_user" name="scrapper_user" required>
+                </div>
+                <div class="mb-3">
+                    <h5 class="mb-1">Scrapper Password</h5>
+                    <input type="text" class="form-control" id="scrapper_pass" name="scrapper_pass" required>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-outline-primary">Submit</button>
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+            <hr>
+        </div>
+    </div>
+</form>
+{% else %}
+<div class="container mt-5">
+    <h2 class="mb-4">Connected Linkedin Account</h2>
+
+    <div class="details-container">
+        <div class="detail-row">
+            <span class="detail-key"><strong>Email:</strong></span>
+            <span class="detail-value">{{linkedin_user.email}}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="detail-key"><strong>Scrapper IP:</strong></span>
+            <span class="detail-value">{{scrapper_details.proxyip}}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="detail-key"><strong>Scrapper PORT:</strong></span>
+            <span class="detail-value">{{scrapper_details.proxyport}}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="detail-key"><strong>Scrapper Username:</strong></span>
+            <span class="detail-value">{{scrapper_details.proxyuser}}</span>
+        </div>
+
+        <div class="detail-row">
+            <span class="detail-key"><strong>Scrapper Password:</strong></span>
+            <span class="detail-value">{{scrapper_details.proxypass}}</span>
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="mt-3">
+        {% csrf_token %}
+        <div class="mb-3">
+            <input type="hidden" id="linkedin-id" name="linkedin-id" value="{{linkedin_user.id}}">
+            <input type="hidden" id="scrapper-id" name="scrapper-id" value="{{scrapper_details.id}}">
+
+        </div>
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-outline-danger">Remove</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+{% endblock %}

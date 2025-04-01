@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">LinkedIn CRM Login</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="form" role="form" autocomplete="off">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input name="username" type="text" class="form-control form-control-lg rounded-1" id="username" required="">
+                            <div class="invalid-feedback">Oops, you missed this one.</div>
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input name="password" type="password" class="form-control form-control-lg rounded-1" id="password" required="" autocomplete="new-password">
+                            <div class="invalid-feedback">Enter your password too!</div>
+                        </div>
+                        <br>
+                        <button type="submit" class="btn btn-outline-success btn-lg float-right" id="btnLogin">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

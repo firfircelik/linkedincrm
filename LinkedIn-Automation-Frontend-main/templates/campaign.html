@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %} Campaigns {% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-5">Recruitment Campaigns</h2>
+  <div class="d-flex mb-3">
+    <a href="/new_campaign">
+      <button class="btn btn-outline-secondary rounded-pill">New Campaign</button>
+    </a>
+  </div>
+  <br>
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th scope="col">
+          <input type="checkbox" id="SelectAll" class="form-check-input">
+        </th>
+        <th scope="col">Campaign Name</th>
+        <th scope="col">Start Date</th>
+        <th scope="col">End Date</th>
+        <th scope="col">Daily Connects Count</th>
+        <th scope="col">Location</th>
+        <th scope="col">Job Title Filter</th>
+        <th scope="col">Total Leads</th>
+        <th scope="col">Connects Sent</th>
+        <th scope="col">Connects Accepted</th>
+        <th scope="col">Excluded Profiles</th>
+        <th scope="col">Campaign Completion Percentage</th>
+        <th scope="col">Status</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in page_obj %}
+      <tr>
+        <td></td>
+        <td>{{row.name}}</td>
+        <td>{{row.start_date}}</td>
+        <td>{{row.end_date}}</td>
+        {% if row.daily_count %}
+        <td>{{row.daily_count}}</td>
+        {% else %}
+        <td> </td>
+        {% endif %}
+        <td>{{row.location}}</td>
+        <td>{{row.job_title}}</td>
+        <td>{{row.total_profile_count}}</td>
+        <td>{{row.connects_sent}}</td>
+        <td>{{row.connect_accepted}}</td>
+        <td>{{row.excluded_profiles}}</td>
+        <td>{{row.campaign_completion_percentage}}</td>
+        <td>{{row.status}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <!-- Pagination Links -->
+  <nav aria-label="Page navigation example">
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+      <li class="page-item active"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+      {% else %}
+      <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+      {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endblock %}
